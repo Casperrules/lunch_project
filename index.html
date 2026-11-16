@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e9e9dc">
+  <title>Word / Way — a four-letter word ladder</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1c3028;
+      --paper: #f7f7ee;
+      --ground: #e9e9dc;
+      --lime: #d7ed71;
+      --muted: #718076;
+      --line: #cdd2c3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid #e29b60;
+      outline-offset: 3px;
+    }
+    .page { max-width: 1540px; margin: auto; padding: 0 5%; }
+    .topbar {
+      min-height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid #b9c1b1;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 15px; font-weight: 800; letter-spacing: -.05em; }
+    .brand-mark {
+      display: grid; place-items: center; width: 31px; height: 31px;
+      background: var(--ink); color: var(--lime); border-radius: 50%; font-size: 18px;
+    }
+    .top-note, .eyebrow, .field-label, .result-label, .micro, .footer {
+      font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    }
+    .top-note { color: #64746a; }
+    .top-note span { display: inline-block; width: 7px; height: 7px; background: #849d55; border-radius: 50%; margin-right: 8px; }
+    .hero {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(390px, .82fr);
+      gap: clamp(45px, 8vw, 130px); align-items: start;
+      padding: clamp(58px, 8vw, 116px) 0 82px;
+    }
+    .intro { padding-top: 7px; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; color: #68796d; }
+    .eyebrow::before { content: ""; width: 28px; height: 1px; background: #829083; }
+    h1 { font-size: clamp(65px, 8.3vw, 130px); line-height: .88; letter-spacing: -.085em; margin: 31px 0 28px; font-weight: 700; }
+    h1 em { font-family: Georgia, serif; font-weight: 400; letter-spacing: -.075em; }
+    .intro-copy { max-width: 390px; color: #627268; font-size: 16px; line-height: 1.65; margin: 0; }
+    .intro-copy strong { color: var(--ink); font-weight: 600; }
+    .how {
+      margin-top: 60px; padding-top: 20px; border-top: 1px solid #bac3b4;
+      display: flex; align-items: center; gap: 16px; color: #66766b;
+      font-size: 12px; line-height: 1.5;
+    }
+    .how-icon { flex: 0 0 37px; width: 37px; height: 37px; border: 1px solid #aebbad; border-radius: 50%; display: grid; place-items: center; font-size: 18px; color: var(--ink); }
+    .workbench { background: var(--paper); border: 1px solid #d5dacd; padding: clamp(25px, 3.2vw, 48px); box-shadow: 0 18px 50px #263b2410; }
+    .card-heading { display: flex; justify-content: space-between; gap: 15px; align-items: start; margin-bottom: 36px; }
+    .card-heading h2 { font-size: 24px; letter-spacing: -.055em; margin: 0 0 7px; }
+    .card-heading p { color: #819087; font-size: 12px; margin: 0; }
+    .card-index { color: #9ba99b; font-family: Georgia, serif; font-style: italic; font-size: 15px; }
+    .inputs { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 10px; align-items: end; }
+    .field-label { display: block; color: #738378; margin-bottom: 11px; }
+    .word-input {
+      display: block; width: 100%; min-width: 0; height: 70px; padding: 0 16px;
+      border: 1px solid #cbd3c7; border-radius: 0; background: #fff;
+      color: var(--ink); text-transform: uppercase; font-size: clamp(22px, 2.4vw, 30px);
+      font-weight: 700; letter-spacing: .16em;
+    }
+    .word-input::placeholder { color: #c8d0c5; }
+    .swap { width: 44px; height: 70px; border: 0; background: transparent; color: #788a7d; font-size: 22px; }
+    .swap:hover { color: var(--ink); }
+    .submit {
+      width: 100%; min-height: 64px; display: flex; justify-content: space-between; align-items: center;
+      margin-top: 18px; padding: 0 21px; border: 0; background: var(--ink); color: #f7f9ec;
+      font-weight: 700; font-size: 13px; letter-spacing: .02em; text-align: left;
+    }
+    .submit:hover { background: #304b3d; }
+    .submit-arrow { color: var(--lime); font-size: 23px; font-weight: 400; }
+    .form-note { min-height: 19px; margin: 13px 0 0; color: #748278; font-size: 12px; line-height: 1.5; }
+    .form-note.error { color: #a44032; }
+    .result { margin-top: 31px; border-top: 1px solid #d8ded2; padding-top: 25px; }
+    .result-top { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; }
+    .result-label { color: #77877b; }
+    .result-count { color: #7e8d81; font-size: 11px; }
+    .empty { color: #8d998e; font-size: 13px; line-height: 1.6; margin: 21px 0 6px; }
+    .path { list-style: none; padding: 0; margin: 23px 0 0; }
+    .path li { display: flex; align-items: center; gap: 17px; min-height: 45px; position: relative; }
+    .path li:not(:last-child)::after {
+      content: ""; position: absolute; top: 31px; bottom: -14px; left: 12px;
+      border-left: 1px solid #bdc9b8;
+    }
+    .step-number {
+      position: relative; z-index: 1; flex: 0 0 25px; height: 25px; display: grid; place-items: center;
+      background: var(--paper); border: 1px solid #cbd5c8; border-radius: 50%; color: #91a08e;
+      font-size: 9px; font-weight: 700;
+    }
+    .path li:first-child .step-number, .path li:last-child .step-number { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+    .step-word { display: flex; gap: 3px; font-size: 19px; font-weight: 700; letter-spacing: .09em; }
+    .letter { display: inline-grid; place-items: center; width: 23px; height: 27px; }
+    .letter.changed { background: var(--lime); }
+    .step-tag { margin-left: auto; color: #94a194; font-size: 9px; letter-spacing: .11em; text-transform: uppercase; font-weight: 700; }
+    .legend { margin-top: 19px; color: #8a998c; font-size: 11px; }
+    .legend::before { content: ""; display: inline-block; width: 9px; height: 9px; background: var(--lime); margin-right: 7px; }
+    .footer {
+      min-height: 75px; border-top: 1px solid #bac3b4; display: flex; justify-content: space-between;
+      align-items: center; gap: 15px; color: #819083; font-size: 9px; line-height: 1.6;
+    }
+    .footer strong { color: #53695a; }
+    @media (max-width: 760px) {
+      .page { padding: 0 22px; }
+      .topbar { min-height: 68px; }
+      .top-note { font-size: 9px; }
+      .hero { display: block; padding: 54px 0 48px; }
+      h1 { font-size: clamp(68px, 15vw, 100px); margin: 25px 0 24px; }
+      .intro-copy { font-size: 15px; }
+      .how { margin: 28px 0 36px; padding-top: 16px; }
+      .workbench { padding: 26px 22px; }
+      .card-heading { margin-bottom: 27px; }
+      .footer { min-height: 68px; }
+    }
+    @media (max-width: 370px) {
+      .page { padding: 0 16px; }
+      .workbench { padding: 23px 16px; }
+      .inputs { grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr); gap: 5px; }
+      .swap { width: 32px; }
+      .word-input { padding: 0 9px; font-size: 21px; }
+      .top-note { letter-spacing: .08em; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .workbench { animation: arrive .5s ease-out both; }
+      @keyframes arrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">↗</span> WORD / WAY</div>
+      <div class="top-note"><span></span>A little word experiment</div>
+    </header>
+
+    <main class="hero">
+      <section class="intro" aria-labelledby="page-title">
+        <div class="eyebrow">The shortest distance between words</div>
+        <h1 id="page-title">One word.<br><em>Another</em><br>way.</h1>
+        <p class="intro-copy">A little change can take you somewhere new. Find the <strong>shortest path</strong> between two four-letter words, one letter at a time.</p>
+        <div class="how"><span class="how-icon" aria-hidden="true">↗</span><span>Every stop is a word from the list.<br>Only one letter changes with each step.</span></div>
+      </section>
+
+      <section class="workbench" aria-labelledby="finder-title">
+        <div class="card-heading">
+          <div><h2 id="finder-title">Make a connection</h2><p>Two words in. One shortest route out.</p></div>
+          <span class="card-index">01 / 01</span>
+        </div>
+        <form id="finder" novalidate>
+          <div class="inputs">
+            <label><span class="field-label">Starting word</span><input class="word-input" id="start" type="text" maxlength="4" placeholder="COLD" value="cold" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="form-note"></label>
+            <button class="swap" id="swap" type="button" aria-label="Swap starting and target words" title="Swap words">⇄</button>
+            <label><span class="field-label">Target word</span><input class="word-input" id="target" type="text" maxlength="4" placeholder="WARM" value="warm" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="form-note"></label>
+          </div>
+          <button class="submit" type="submit"><span>Find the shortest path</span><span class="submit-arrow" aria-hidden="true">↗</span></button>
+          <p class="form-note" id="form-note">Use four-letter words from the dictionary.</p>
+        </form>
+        <div class="result" aria-live="polite" aria-atomic="true">
+          <div class="result-top"><span class="result-label">The route</span><span class="result-count" id="result-count"></span></div>
+          <div id="result"><p class="empty">Your word journey will appear here.</p></div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><span><strong>WORD / WAY</strong> &nbsp;·&nbsp; A small journey in letters</span><span id="dictionary-count"></span></footer>
+  </div>
+  <script>
+    const dictionary = [
+      "able", "acid", "aged", "ally", "also", "area", "army", "atom", "babe", "baby", "back",
+      "ball", "band", "bank", "base", "bear", "beat", "bell", "belt", "best", "bird",
+      "blow", "blue", "boat", "body", "bone", "book", "boom", "born", "boss", "bowl",
+      "bulk", "burn", "bush", "busy", "call", "calm", "camp", "card", "care", "case",
+      "cash", "cast", "cell", "chat", "chip", "city", "club", "coal", "coat", "code",
+      "cold", "come", "cook", "cool", "cope", "copy", "core", "cost", "crew", "crop",
+      "dark", "data", "date", "dawn", "days", "dead", "deal", "dean", "dear", "debt",
+      "deck", "deed", "deep", "deer", "deny", "desk", "dial", "diet", "disk", "dock",
+      "does", "done", "door", "dose", "down", "draw", "drop", "duck", "duet", "dusk",
+      "dust", "duty", "each", "earn", "ease", "east", "easy", "edge", "edit", "else",
+      "emit", "epic", "even", "ever", "exam", "exit", "face", "fact", "fade", "fail",
+      "fair", "fall", "fame", "farm", "fast", "fate", "fear", "feed", "feel", "feet",
+      "fell", "felt", "file", "fill", "film", "find", "fine", "fire", "firm", "fish",
+      "five", "flat", "flow", "focal", "fold", "folk", "fond", "food", "foot", "ford",
+      "form", "fort", "foul", "four", "free", "frog", "from", "fuel", "full", "fund",
+      "gain", "game", "gang", "gate", "gave", "gear", "gene", "gift", "girl", "give",
+      "glad", "goal", "goes", "gold", "golf", "gone", "good", "gray", "grew", "grey",
+      "grid", "grow", "gulf", "hair", "half", "hall", "halt", "hand", "hang", "hard",
+      "harm", "hate", "have", "head", "hear", "heat", "held", "hell", "help", "here",
+      "hero", "high", "hill", "hire", "hold", "hole", "holy", "home", "hope", "host",
+      "hour", "huge", "hung", "hunt", "hurt", "idea", "inch", "into", "iron", "item",
+      "jail", "jazz", "join", "joke", "jolt", "jump", "jury", "just", "keen", "keep",
+      "kent", "kept", "kick", "kill", "kind", "king", "kiss", "knee", "knew", "knot",
+      "know", "lack", "lady", "laid", "lake", "lamp", "land", "lane", "last", "late",
+      "lead", "leaf", "leak", "lean", "lear", "leas", "leds", "left", "lend", "lens",
+      "lent", "less", "lest", "liar", "lick", "life", "lift", "like", "lime", "line",
+      "link", "lion", "lips", "list", "live", "load", "loan", "lock", "logo", "lomb",
+      "lone", "long", "look", "lord", "lose", "loss", "lost", "loud", "love", "luck",
+      "lump", "lung", "made", "mail", "main", "make", "male", "mall", "many", "marc",
+      "mark", "mars", "mask", "mass", "mate", "math", "matt", "meal", "mean", "meat",
+      "meet", "melt", "memo", "menu", "mere", "mesh", "mesh", "mike", "mild", "mile",
+      "milk", "mill", "mind", "mine", "mini", "mode", "mood", "moon", "moor", "more",
+      "most", "move", "much", "must", "myth", "nail", "name", "navy", "near", "neat",
+      "neck", "need", "neon", "nest", "news", "next", "nice", "nine", "none", "noon",
+      "norm", "nose", "note", "numb", "nuts", "oath", "obey", "odds", "ogle", "okay",
+      "olds", "olio", "omit", "once", "only", "onto", "open", "oral", "orca", "orig",
+      "oval", "oven", "over", "pace", "pack", "page", "paid", "pain", "pair", "pale",
+      "palm", "park", "part", "pass", "past", "path", "peak", "peal", "pear", "peel",
+      "peer", "pelt", "pend", "pens", "pent", "perk", "pest", "pets", "pick", "piec",
+      "pile", "pill", "pine", "pink", "pipe", "pity", "plan", "play", "plot", "plug",
+      "plus", "poem", "poet", "pole", "poll", "pond", "pool", "poor", "pork", "port",
+      "pose", "post", "pour", "pray", "prep", "prev", "prey", "pride", "prim", "priv",
+      "prod", "prof", "prop", "pros", "pull", "pulp", "pump", "pure", "push", "quad",
+      "quay", "queen", "query", "quest", "quit", "quiz", "quot", "race", "rack", "rage",
+      "raid", "rail", "rain", "ramp", "rang", "rank", "rare", "rate", "rawl", "read",
+      "real", "rear", "rebel", "recs", "reed", "reef", "reel", "rely", "rent", "rest",
+      "rice", "rich", "ride", "ring", "riot", "ripe", "rise", "risk", "road", "roam",
+      "roar", "rock", "rode", "role", "roll", "roof", "room", "root", "rope", "rose",
+      "ruin", "rule", "rump", "rung", "rush", "rust", "safe", "sage", "said", "sail",
+      "sake", "sale", "salt", "same", "sand", "sang", "sank", "save", "scan", "scar",
+      "scene", "scot", "seal", "seat", "seed", "seek", "seem", "seen", "self", "sell",
+      "send", "sent", "sept", "seqs", "sera", "serf", "sess", "sets", "sewn", "shad",
+      "shag", "shah", "sham", "shed", "shew", "shin", "ship", "shoe", "shop", "shot",
+      "show", "shun", "shut", "sick", "side", "sift", "sigh", "sign", "silk", "sill",
+      "silo", "silver", "sims", "sine", "sing", "sink", "sins", "site", "sits", "size",
+      "skew", "skid", "skim", "skin", "skip", "skirt", "slab", "slam", "slap", "slat",
+      "slaw", "slay", "sled", "sleek", "sleep", "sleet", "slept", "slice", "slick",
+      "slide", "slime", "sling", "slip", "slit", "slob", "slog", "slot", "slow", "slug",
+      "slum", "slur", "smog", "snap", "snip", "snob", "snot", "snow", "snub", "snug",
+      "soak", "soap", "soar", "sock", "soda", "sofa", "soft", "soil", "sold", "sole",
+      "solo", "some", "song", "soon", "soot", "sore", "sort", "soul", "soup", "sour",
+      "sow", "span", "spar", "spas", "spat", "spec", "sped", "spin", "spit", "spot",
+      "spud", "spun", "spur", "stab", "stag", "stan", "star", "stat", "stay", "stem",
+      "step", "stew", "stir", "stop", "stow", "stub", "stud", "stun", "subs", "such",
+      "suck", "sued", "suet", "suit", "sulks", "sung", "sunk", "sure", "surf", "swab",
+      "swag", "swan", "swap", "swat", "sway", "swig", "swim", "swin", "sync", "syst",
+      "tabs", "tach", "tack", "tact", "tag", "tail", "take", "tale", "talk", "tall",
+      "tame", "tank", "tape", "taps", "tare", "tarn", "taro", "tarp", "tart", "task",
+      "taxi", "teal", "team", "tear", "teas", "tech", "teed", "teen", "tees", "tell",
+      "tend", "tens", "tent", "term", "tern", "test", "text", "than", "that", "thee",
+      "them", "then", "thew", "they", "thin", "this", "thor", "thou", "thru", "thud",
+      "thug", "tick", "tide", "tidy", "tier", "ties", "tiff", "tile", "till", "tilt",
+      "time", "ting", "tint", "tiny", "tips", "tire", "toad", "toga", "told", "toll",
+      "tomb", "tone", "tong", "tons", "took", "tool", "toot", "topaz", "tops", "tore",
+      "torn", "toro", "tort", "toss", "tote", "tour", "tout", "town", "toys", "tram",
+      "trap", "tray", "tree", "trek", "trim", "trio", "trip", "trod", "trot", "true",
+      "tub", "tube", "tuck", "tuft", "tuna", "tune", "turf", "turn", "tusk", "tutu",
+      "twin", "twit", "type", "typo", "ugly", "undo", "unit", "upon", "urge", "used",
+      "user", "utah", "vain", "vale", "vamp", "vane", "vang", "vape", "vase", "vast",
+      "veal", "veda", "veen", "veer", "veil", "vein", "veld", "vend", "vent", "verb",
+      "very", "vial", "vice", "vide", "vied", "vier", "view", "vile", "vine", "vino",
+      "viol", "visa", "vise", "void", "volt", "vote", "vow", "wade", "waft", "wage",
+      "wail", "wait", "wake", "walk", "wall", "wand", "wane", "want", "ward", "warm",
+      "warn", "warp", "wars", "wart", "wary", "wash", "wasp", "watt", "wave", "wavy",
+      "waxy", "ways", "weak", "weal", "wean", "wear", "weed", "week", "weep", "weld",
+      "well", "welt", "went", "wept", "were", "west", "wet", "wham", "what", "whee",
+      "when", "whew", "whet", "whig", "whim", "whip", "whir", "whit", "whiz", "who",
+      "whom", "whop", "whys", "wick", "wide", "wife", "wild", "will", "wilt", "wimp",
+      "wind", "wine", "wing", "wink", "wipe", "wire", "wise", "wish", "wisp", "with",
+      "wits", "woes", "woke", "wolf", "womb", "wood", "wool", "word", "wore", "work",
+      "worm", "worn", "wort", "wove", "wrap", "wren", "writ", "wry", "yacht", "yaks",
+      "yam", "yawn", "yea", "yeah", "year", "yeast", "yell", "yelp", "yeti", "yew",
+      "yin", "yipe", "yolk", "yore", "your", "yowl", "yuan", "yurt", "zany", "zap",
+      "zeal", "zero", "zest", "zinc", "zing", "zion", "zone", "zoom", "zori"
+    ];
+
+    const words = new Set(dictionary.filter(word => /^[a-z]{4}$/.test(word)));
+
+    // Build and retain the complete adjacency list once, rather than generating neighbors during each search.
+    function buildGraph(wordSet) {
+      const graph = new Map(Array.from(wordSet, word => [word, []]));
+      const patterns = new Map();
+      for (const word of wordSet) {
+        for (let i = 0; i < 4; i++) {
+          const pattern = word.slice(0, i) + "*" + word.slice(i + 1);
+          if (!patterns.has(pattern)) patterns.set(pattern, []);
+          const bucket = patterns.get(pattern);
+          for (const neighbor of bucket) {
+            graph.get(word).push(neighbor);
+            graph.get(neighbor).push(word);
+          }
+          bucket.push(word);
+        }
+      }
+      return graph;
+    }
+
+    const graph = buildGraph(words);
+
+    function shortestPath(start, target) {
+      if (start === target) return [start];
+      let front = [start];
+      let back = [target];
+      const fromStart = new Map([[start, null]]);
+      const fromTarget = new Map([[target, null]]);
+      const startDepth = new Map([[start, 0]]);
+      const targetDepth = new Map([[target, 0]]);
+
+      while (front.length && back.length) {
+        const forward = front.length <= back.length;
+        const frontier = forward ? front : back;
+        const own = forward ? fromStart : fromTarget;
+        const other = forward ? fromTarget : fromStart;
+        const ownDepth = forward ? startDepth : targetDepth;
+        const otherDepth = forward ? targetDepth : startDepth;
+        const next = [];
+        let meeting = null;
+        let bestDistance = Infinity;
+
+        for (const word of frontier) {
+          for (const neighbor of graph.get(word)) {
+            if (own.has(neighbor)) continue;
+            own.set(neighbor, word);
+            ownDepth.set(neighbor, ownDepth.get(word) + 1);
+            next.push(neighbor);
+            if (other.has(neighbor)) {
+              const distance = ownDepth.get(neighbor) + otherDepth.get(neighbor);
+              if (distance < bestDistance) {
+                bestDistance = distance;
+                meeting = neighbor;
+              }
+            }
+          }
+        }
+        if (meeting !== null) {
+          const path = [];
+          for (let word = meeting; word !== null; word = fromStart.get(word)) path.push(word);
+          path.reverse();
+          for (let word = fromTarget.get(meeting); word !== null; word = fromTarget.get(word)) path.push(word);
+          return path;
+        }
+        if (forward) front = next;
+        else back = next;
+      }
+      return null;
+    }
+
+    const form = document.getElementById("finder");
+    const startInput = document.getElementById("start");
+    const targetInput = document.getElementById("target");
+    const note = document.getElementById("form-note");
+    const result = document.getElementById("result");
+    const count = document.getElementById("result-count");
+    document.getElementById("dictionary-count").textContent = `${words.size} four-letter words · built for curious minds`;
+
+    function resetResult() {
+      count.textContent = "";
+      result.replaceChildren();
+    }
+
+    function showMessage(message, isError = false) {
+      note.textContent = message;
+      note.classList.toggle("error", isError);
+    }
+
+    function renderPath(path) {
+      const list = document.createElement("ol");
+      list.className = "path";
+      path.forEach((word, index) => {
+        const item = document.createElement("li");
+        const number = document.createElement("span");
+        number.className = "step-number";
+        number.textContent = index + 1;
+        const letters = document.createElement("span");
+        letters.className = "step-word";
+        letters.setAttribute("aria-label", word.toUpperCase());
+        for (let i = 0; i < word.length; i++) {
+          const letter = document.createElement("span");
+          letter.className = "letter" + (index > 0 && word[i] !== path[index - 1][i] ? " changed" : "");
+          letter.textContent = word[i].toUpperCase();
+          letter.setAttribute("aria-hidden", "true");
+          letters.append(letter);
+        }
+        item.append(number, letters);
+        if (index === 0 || index === path.length - 1) {
+          const tag = document.createElement("span");
+          tag.className = "step-tag";
+          tag.textContent = path.length === 1 ? "start & finish" : index === 0 ? "start" : "finish";
+          item.append(tag);
+        }
+        list.append(item);
+      });
+      result.append(list);
+      if (path.length > 1) {
+        const legend = document.createElement("p");
+        legend.className = "legend";
+        legend.textContent = "The letter that changed";
+        result.append(legend);
+      }
+      const changes = path.length - 1;
+      count.textContent = `${changes} ${changes === 1 ? "change" : "changes"}`;
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      resetResult();
+      const start = startInput.value.trim().toLowerCase();
+      const target = targetInput.value.trim().toLowerCase();
+      for (const [input, word, label] of [[startInput, start, "starting"], [targetInput, target, "target"]]) {
+        if (!/^[a-z]{4}$/.test(word)) {
+          showMessage(`Enter a ${label} word with exactly four letters.`, true);
+          input.focus();
+          return;
+        }
+        if (!words.has(word)) {
+          showMessage(`“${word.toUpperCase()}” isn't in this dictionary. Try another ${label} word.`, true);
+          input.focus();
+          return;
+        }
+      }
+      showMessage("Use four-letter words from the dictionary.");
+      const path = shortestPath(start, target);
+      if (path) {
+        renderPath(path);
+      } else {
+        const message = document.createElement("p");
+        message.className = "empty";
+        message.textContent = "No route connects these words in this dictionary. Try another pair.";
+        result.append(message);
+      }
+    });
+
+    for (const input of [startInput, targetInput]) {
+      input.addEventListener("input", () => {
+        resetResult();
+        showMessage("Use four-letter words from the dictionary.");
+      });
+    }
+    document.getElementById("swap").addEventListener("click", () => {
+      [startInput.value, targetInput.value] = [targetInput.value, startInput.value];
+      resetResult();
+      showMessage("Use four-letter words from the dictionary.");
+    });
+    form.requestSubmit();
+  </script>
+</body>
+</html>
