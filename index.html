@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#e9e9dc">
-  <title>Word / Way — a four-letter word ladder</title>
+  <title>Word / Way — a word ladder game</title>
   <style>
     :root {
       color-scheme: light;
@@ -27,115 +27,151 @@
       outline: 3px solid #e29b60;
       outline-offset: 3px;
     }
-    .field-label, .result-label {
-      font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-    }
+    [hidden] { display: none !important; }
     .page { min-height: 100vh; display: flex; padding: 24px; }
-    .workbench { width: min(100%, 560px); margin: auto; background: var(--paper); border: 1px solid #d5dacd; padding: clamp(25px, 3.2vw, 48px); box-shadow: 0 18px 50px #263b2410; }
-    .card-heading { display: flex; justify-content: space-between; gap: 15px; align-items: start; margin-bottom: 36px; }
-    .card-heading h1 { font-size: 24px; letter-spacing: -.055em; margin: 0 0 7px; }
-    .card-heading p { color: #819087; font-size: 12px; margin: 0; }
-    .card-index { color: #9ba99b; font-family: Georgia, serif; font-style: italic; font-size: 15px; }
-    .inputs { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 10px; align-items: end; }
-    .field-label { display: block; color: #738378; margin-bottom: 11px; }
-    .word-input {
-      display: block; width: 100%; min-width: 0; height: 70px; padding: 0 16px;
-      border: 1px solid #cbd3c7; border-radius: 0; background: #fff;
-      color: var(--ink); text-transform: uppercase; font-size: clamp(22px, 2.4vw, 30px);
-      font-weight: 700; letter-spacing: .16em;
-    }
-    .word-input::placeholder { color: #c8d0c5; }
-    .swap { width: 44px; height: 70px; border: 0; background: transparent; color: #788a7d; font-size: 22px; }
-    .swap:hover { color: var(--ink); }
-    .submit {
-      width: 100%; min-height: 64px; display: flex; justify-content: space-between; align-items: center;
-      margin-top: 18px; padding: 0 21px; border: 0; background: var(--ink); color: #f7f9ec;
-      font-weight: 700; font-size: 13px; letter-spacing: .02em; text-align: left;
-    }
-    .submit:hover { background: #304b3d; }
-    .submit:disabled { cursor: wait; opacity: .6; }
-    .submit-arrow { color: var(--lime); font-size: 23px; font-weight: 400; }
-    .form-note { min-height: 19px; margin: 13px 0 0; color: #748278; font-size: 12px; line-height: 1.5; }
-    .form-note.error { color: #a44032; }
-    .retry { padding: 0; border: 0; background: none; color: var(--ink); font-size: 12px; text-decoration: underline; }
-    .source { color: #748278; font-size: 11px; margin: 10px 0 0; }
+    .workbench { width: min(100%, 510px); margin: auto; background: var(--paper); border: 1px solid #d5dacd; padding: clamp(24px, 4vw, 42px); box-shadow: 0 18px 50px #263b2410; }
+    .card-heading { display: flex; align-items: start; justify-content: space-between; gap: 15px; }
+    .card-heading h1 { font-size: 27px; letter-spacing: -.06em; margin: 0; }
+    .card-heading p, .helper { color: #718076; font-size: 12px; line-height: 1.5; }
+    .card-heading p { margin: 7px 0 0; }
+    .mark { color: #9baa9c; font: italic 15px Georgia, serif; }
+    .length-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+    .length-setting label { color: #718076; font-size: 12px; line-height: 1.5; }
+    .length-setting strong { display: block; color: var(--ink); font-size: 13px; }
+    .length-setting input { width: 70px; padding: 8px; border: 1px solid #aebdae; border-radius: 0; background: white; color: var(--ink); font-size: 16px; }
+    .length-controls { display: flex; align-items: center; gap: 8px; }
+    .refresh { min-height: 40px; padding: 0 12px; border: 1px solid var(--ink); background: transparent; color: var(--ink); font-size: 12px; font-weight: 700; }
+    .refresh:hover:not(:disabled) { background: #e5ebdf; }
+    .refresh:disabled { opacity: .5; cursor: wait; }
+    .route { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 28px 0 20px; padding: 18px 0; border-top: 1px solid #d8ded2; border-bottom: 1px solid #d8ded2; }
+    .route-label, .section-label { display: block; color: #829084; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .13em; }
+    .route-word { display: block; margin-top: 6px; font-size: clamp(14px, 4vw, 23px); letter-spacing: .04em; font-weight: 700; text-transform: uppercase; overflow-wrap: anywhere; }
+    .route > div { min-width: 0; }
+    .route-value { display: flex; align-items: center; gap: 7px; }
+    .route-value .info { margin: 6px 0 0; width: 28px; height: 28px; }
+    .route-arrow { color: #99a798; font-size: 24px; }
+    .target { text-align: right; }
+    .board { height: 304px; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #b4c0af transparent; scrollbar-width: thin; container-type: inline-size; }
+    .rows { display: flex; flex-direction: column; gap: 8px; padding: 7px; }
+    .row { min-height: 52px; display: flex; align-items: center; gap: 8px; }
+    .tiles { display: flex; gap: 8px; max-width: 100%; }
+    .row.long-word { flex-wrap: wrap; gap: 4px; }
+    .row.long-word .row-tag { flex-basis: 100%; }
+    .tile { display: grid; place-items: center; width: var(--tile-size); height: var(--tile-size); background: #8c9990; color: white; font-size: clamp(15px, 4vw, 23px); font-weight: 700; text-transform: uppercase; }
+    .tile.correct { background: #53865e; }
+    .tile.present { background: #c4a34b; }
+    .tile.invalid { background: #c8ceca; color: #536159; }
+    .row-tag { color: #87958a; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .guess { width: var(--tile-size); height: var(--tile-size); border: 1px solid #aebdae; border-radius: 0; padding: 0; background: white; color: var(--ink); text-align: center; text-transform: uppercase; font-size: clamp(16px, 4vw, 23px); font-weight: 700; }
+    .guess:focus-visible { outline-width: 2px; outline-offset: 1px; }
+    .shake { animation: shake .32s ease; }
+    @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-4px); } }
+    .helper { margin: 14px 0 0; }
+    .submit, .action { min-height: 52px; border: 1px solid var(--ink); background: var(--ink); color: white; font-size: 13px; font-weight: 700; }
+    .submit { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 19px; margin-top: 18px; }
+    .submit span:last-child { color: var(--lime); font-size: 22px; }
+    .submit:disabled { opacity: .55; cursor: wait; }
+    .show-answer { width: 100%; min-height: 48px; margin-top: 8px; border: 1px solid #aa443b; background: transparent; color: #a44032; font-size: 13px; font-weight: 700; }
+    .show-answer:hover:not(:disabled) { background: #fae9e4; }
+    .show-answer:disabled { opacity: .5; cursor: wait; }
+    .status { min-height: 18px; color: #718076; font-size: 12px; margin: 12px 0 0; }
+    .link-button { padding: 0; border: 0; background: none; color: var(--ink); text-decoration: underline; font-size: 12px; }
+    .source { color: #89978b; font-size: 11px; margin: 12px 0 0; }
     .source a { color: inherit; }
-    .result { margin-top: 31px; border-top: 1px solid #d8ded2; padding-top: 25px; }
-    .result-top { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; }
-    .result-label { color: #77877b; }
-    .result-count { color: #7e8d81; font-size: 11px; }
-    .empty { color: #8d998e; font-size: 13px; line-height: 1.6; margin: 21px 0 6px; }
-    .path { list-style: none; padding: 0; margin: 23px 0 0; }
-    .path li { display: flex; align-items: center; gap: 17px; min-height: 45px; position: relative; }
-    .path li:not(:last-child)::after {
-      content: ""; position: absolute; top: 31px; bottom: -14px; left: 12px;
-      border-left: 1px solid #bdc9b8;
-    }
-    .step-number {
-      position: relative; z-index: 1; flex: 0 0 25px; height: 25px; display: grid; place-items: center;
-      background: var(--paper); border: 1px solid #cbd5c8; border-radius: 50%; color: #91a08e;
-      font-size: 9px; font-weight: 700;
-    }
-    .path li:first-child .step-number, .path li:last-child .step-number { background: var(--ink); border-color: var(--ink); color: var(--lime); }
-    .step-word { display: flex; gap: 3px; font-size: 19px; font-weight: 700; letter-spacing: .09em; }
-    .letter { display: inline-grid; place-items: center; width: 23px; height: 27px; }
-    .letter.changed { background: var(--lime); }
-    .step-tag { margin-left: auto; color: #94a194; font-size: 9px; letter-spacing: .11em; text-transform: uppercase; font-weight: 700; }
-    .legend { margin-top: 19px; color: #8a998c; font-size: 11px; }
-    .legend::before { content: ""; display: inline-block; width: 9px; height: 9px; background: var(--lime); margin-right: 7px; }
-    @media (max-width: 760px) {
-      .page { padding: 22px; }
-      .workbench { padding: 26px 22px; }
-      .card-heading { margin-bottom: 27px; }
-    }
-    @media (max-width: 370px) {
-      .page { padding: 16px; }
-      .workbench { padding: 23px 16px; }
-      .inputs { grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr); gap: 5px; }
-      .swap { width: 32px; }
-      .word-input { padding: 0 9px; font-size: 21px; }
-    }
-    @media (prefers-reduced-motion: no-preference) {
-      .workbench { animation: arrive .5s ease-out both; }
-      @keyframes arrive { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    }
+    .summary { border-top: 1px solid #d8ded2; margin-top: 20px; padding-top: 20px; }
+    .summary h2 { font-size: 22px; letter-spacing: -.05em; margin: 0 0 7px; }
+    .summary p { margin: 0; color: #718076; font-size: 13px; }
+    .actions { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 8px; margin-top: 18px; }
+    .action { padding: 0 8px; }
+    .action.secondary { color: var(--ink); background: transparent; }
+    .toast { position: fixed; z-index: 10; top: 18px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 12px 18px; background: var(--ink); color: white; box-shadow: 0 5px 20px #0002; font-size: 13px; text-align: center; }
+    dialog { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(100%, 430px); max-width: 100%; height: 100%; max-height: 100%; border: 0; padding: 30px; background: var(--paper); color: var(--ink); box-shadow: -10px 0 40px #0002; }
+    dialog::backdrop { background: #16271db3; }
+    .drawer-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .drawer-heading h2 { margin: 0; font-size: 25px; letter-spacing: -.05em; }
+    .close { border: 0; background: transparent; color: var(--ink); font-size: 30px; line-height: 1; padding: 4px; }
+    .drawer-copy { color: #718076; font-size: 13px; margin: 8px 0 25px; }
+    .path { list-style: none; padding: 0; margin: 0; }
+    .path-item { border-top: 1px solid #d8ded2; padding: 12px 0; }
+    .path-line { display: flex; align-items: center; gap: 15px; }
+    .path-number { color: #9aaa9b; font-size: 11px; width: 20px; }
+    .path-word { text-transform: uppercase; font-size: 19px; font-weight: 700; letter-spacing: .1em; }
+    .info { margin-left: auto; width: 32px; height: 32px; border: 1px solid #b4c2b5; border-radius: 50%; color: var(--ink); background: transparent; font: italic 16px Georgia, serif; }
+    .meaning-dialog { inset: 0; margin: auto; width: min(90%, 420px); height: auto; max-height: 80vh; padding: 28px; border: 1px solid #d5dacd; box-shadow: 0 18px 60px #0003; overflow-y: auto; }
+    .meaning-word { text-transform: uppercase; }
+    .meaning-text { color: #617267; font-size: 15px; line-height: 1.6; margin: 20px 0 0; overflow-wrap: anywhere; }
+    @media (max-width: 500px) { .page { padding: 16px; } .workbench { padding: 24px 20px; } dialog { padding: 24px; } }
+    @media (prefers-reduced-motion: reduce) { .shake { animation: none; } }
   </style>
 </head>
 <body>
   <main class="page">
       <section class="workbench" aria-labelledby="finder-title">
         <div class="card-heading">
-          <div><h1 id="finder-title">Make a connection</h1><p>Two words in. One shortest route out.</p></div>
-          <span class="card-index">01 / 01</span>
+          <div><h1 id="finder-title">Word / Way</h1><p>One letter at a time. Find your way there.</p></div>
+          <span class="mark">a word game</span>
         </div>
-        <form id="finder" novalidate>
-          <div class="inputs">
-            <label><span class="field-label">Starting word</span><input class="word-input" id="start" type="text" maxlength="4" placeholder="COLD" value="cold" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="form-note"></label>
-            <button class="swap" id="swap" type="button" aria-label="Swap starting and target words" title="Swap words">⇄</button>
-            <label><span class="field-label">Target word</span><input class="word-input" id="target" type="text" maxlength="4" placeholder="WARM" value="warm" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="form-note"></label>
+        <div class="length-setting">
+          <label for="word-length"><strong>Word length</strong>Refresh starts a new challenge</label>
+          <div class="length-controls">
+            <input id="word-length" type="number" min="4" max="6" step="1" value="4" inputmode="numeric">
+            <button class="refresh" id="refresh-game" type="button" disabled>Refresh ↻</button>
           </div>
-          <button class="submit" type="submit" disabled><span>Find the shortest path</span><span class="submit-arrow" aria-hidden="true">↗</span></button>
-          <p class="form-note" id="form-note" role="status">Loading the word list…</p>
-          <button class="retry" id="retry" type="button" hidden>Retry loading</button>
-          <p class="source">Words from <a href="https://github.com/dwyl/english-words" target="_blank" rel="noopener noreferrer">dwyl/english-words</a></p>
-        </form>
-        <div class="result" aria-live="polite" aria-atomic="true">
-          <div class="result-top"><span class="result-label">The route</span><span class="result-count" id="result-count"></span></div>
-          <div id="result"><p class="empty">Your word journey will appear here.</p></div>
         </div>
+        <div class="route" aria-label="Your word pair">
+          <div><span class="route-label">Start</span><div class="route-value"><span id="start-word" class="route-word">—</span><button class="info" id="start-info" type="button" aria-label="Meaning of starting word" aria-haspopup="dialog" disabled>i</button></div></div>
+          <span class="route-arrow" aria-hidden="true">↗</span>
+          <div class="target"><span class="route-label">Finish</span><div class="route-value"><span id="target-word" class="route-word">—</span><button class="info" id="target-info" type="button" aria-label="Meaning of target word" aria-haspopup="dialog" disabled>i</button></div></div>
+        </div>
+        <span class="section-label">Your journey</span>
+        <div class="board" id="board" aria-label="Guess history">
+          <div class="rows" id="rows"></div>
+        </div>
+        <p class="helper">Change one letter from your last valid word. Green is in place; yellow belongs elsewhere; gray isn't in the target.</p>
+        <form id="guess-form" novalidate>
+          <button class="submit" type="submit" disabled><span>Make a move</span><span aria-hidden="true">↗</span></button>
+          <button class="show-answer" id="show-answer" type="button" disabled>Show answer</button>
+        </form>
+        <p class="status" id="status" role="status">Loading the word list…</p>
+        <button class="link-button" id="retry-loading" type="button" hidden>Retry loading</button>
+        <div class="summary" id="summary" hidden aria-live="polite">
+          <h2>Made it.</h2>
+          <p id="score"></p>
+          <div class="actions">
+            <button class="action secondary" id="retry-game" type="button">Retry</button>
+            <button class="action secondary" id="show-path" type="button">Check shortest</button>
+            <button class="action" id="next-game" type="button">Next ↗</button>
+          </div>
+        </div>
+        <p class="source">Words and meanings: <a href="https://github.com/CloudBytes-Academy/English-Dictionary-Open-Source" target="_blank" rel="noopener noreferrer">English Dictionary Open Source</a>, using <a href="https://github.com/globalwordnet/english-wordnet" target="_blank" rel="noopener noreferrer">Open English WordNet</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Only words in this dictionary are accepted.</p>
       </section>
   </main>
+  <div class="toast" id="toast" role="alert" hidden></div>
+  <dialog id="path-drawer" aria-labelledby="drawer-title">
+    <div class="drawer-heading"><h2 id="drawer-title">The shortest way</h2><button class="close" id="close-drawer" type="button" aria-label="Close shortest path">×</button></div>
+    <p class="drawer-copy">Tap the info icon to see a word's meaning. A new challenge starts when you close this answer.</p>
+    <ol class="path" id="path-list"></ol>
+  </dialog>
+  <dialog class="meaning-dialog" id="meaning-dialog" aria-labelledby="meaning-title">
+    <div class="drawer-heading"><h2 class="meaning-word" id="meaning-title"></h2><button class="close" id="close-meaning" type="button" aria-label="Close meaning">×</button></div>
+    <p class="meaning-text" id="meaning-text"></p>
+  </dialog>
   <script>
-    const WORD_LIST_URL = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt";
+    const WORD_LIST_URL = "https://raw.githubusercontent.com/CloudBytes-Academy/English-Dictionary-Open-Source/main/v2/dictionary.jsonl.gz";
+    const knownAbbreviations = new Set([
+      "admin", "approx", "appt", "assoc", "corp", "dept", "estd", "govt",
+      "incl", "info", "misc", "mths", "nos", "pref", "univ", "vols"
+    ]);
     let words = new Set();
     let graph = new Map();
+    let definitions = new Map();
 
     // Build and retain the complete adjacency list once, rather than generating neighbors during each search.
     function buildGraph(wordSet) {
       const graph = new Map(Array.from(wordSet, word => [word, []]));
       const patterns = new Map();
       for (const word of wordSet) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < word.length; i++) {
           const pattern = word.slice(0, i) + "*" + word.slice(i + 1);
           if (!patterns.has(pattern)) patterns.set(pattern, []);
           const bucket = patterns.get(pattern);
@@ -197,138 +233,427 @@
       return null;
     }
 
-    const form = document.getElementById("finder");
-    const startInput = document.getElementById("start");
-    const targetInput = document.getElementById("target");
-    const note = document.getElementById("form-note");
-    const result = document.getElementById("result");
-    const count = document.getElementById("result-count");
+    const form = document.getElementById("guess-form");
     const submit = form.querySelector('button[type="submit"]');
-    const retry = document.getElementById("retry");
-    let ready = false;
-    let edited = false;
+    const status = document.getElementById("status");
+    const retryLoading = document.getElementById("retry-loading");
+    const board = document.getElementById("board");
+    const rows = document.getElementById("rows");
+    const summary = document.getElementById("summary");
+    const drawer = document.getElementById("path-drawer");
+    const pathList = document.getElementById("path-list");
+    const toast = document.getElementById("toast");
+    const showAnswer = document.getElementById("show-answer");
+    const lengthInput = document.getElementById("word-length");
+    const refreshGame = document.getElementById("refresh-game");
+    let wordLength = 4;
+    let lastValidLength = 4;
+    let startWord = "";
+    let targetWord = "";
+    let currentWord = "";
+    let solution = [];
+    let steps = 0;
+    let failures = 0;
+    let guessInputs = [];
+    let guessRow = null;
+    let finished = false;
+    let toastTimer;
+    let regenerateAfterAnswer = false;
 
     async function loadWords() {
-      ready = false;
       submit.disabled = true;
-      retry.hidden = true;
-      showMessage("Loading the word list…");
+      refreshGame.disabled = true;
+      retryLoading.hidden = true;
+      setStatus("Loading the word list…");
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
       try {
         const response = await fetch(WORD_LIST_URL, { signal: controller.signal });
         if (!response.ok) throw new Error(`Word list request failed: HTTP ${response.status}`);
-        const text = await response.text();
-        const loadedWords = new Set(text.split(/\r?\n/).filter(word => /^[a-z]{4}$/.test(word)));
+        if (!response.body || typeof DecompressionStream === "undefined") {
+          throw new Error("This browser cannot read the compressed dictionary.");
+        }
+        const reader = response.body.pipeThrough(new DecompressionStream("gzip")).pipeThrough(new TextDecoderStream()).getReader();
+        const loadedDefinitions = new Map();
+        let pending = "";
+        const readLine = line => {
+          if (!/"word":"[a-zA-Z]{4,6}"/.test(line) || !line.includes('"source":"oewn"')) return;
+          const entry = JSON.parse(line);
+          if (!/^[a-z]{4,6}$/.test(entry.word) || typeof entry.definition !== "string" || !entry.definition.trim()) return;
+          if (knownAbbreviations.has(entry.word)) return;
+          if (/\b(?:abbreviations?|abbreviated|acronyms?|initialisms?|short for)\b/i.test(entry.definition)) return;
+          if (/^[ivxlcdm]+$/.test(entry.word) && /\.cardinal\./.test(entry.id)) return;
+          const word = entry.word;
+          if (!loadedDefinitions.has(word)) loadedDefinitions.set(word, {
+            text: entry.definition.trim(),
+            partOfSpeech: entry.pos
+          });
+        };
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          pending += value;
+          const lines = pending.split("\n");
+          pending = lines.pop();
+          for (const line of lines) readLine(line);
+        }
+        if (pending) readLine(pending);
+        const loadedWords = new Set(loadedDefinitions.keys());
         if (loadedWords.size < 1000) throw new Error("The word list is incomplete or invalid.");
         const loadedGraph = buildGraph(loadedWords);
         words = loadedWords;
         graph = loadedGraph;
-        ready = true;
-        submit.disabled = false;
-        showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
-        if (!edited) form.requestSubmit();
+        definitions = loadedDefinitions;
+        newGame(4);
+        refreshGame.disabled = false;
       } catch (error) {
         console.error("Could not load the word list:", error);
-        showMessage("Couldn't load the word list. Check your connection and try again.", true);
-        retry.hidden = false;
+        setStatus("");
+        showToast("Couldn't load the dictionary. Check your connection or browser support, then try again.");
+        retryLoading.hidden = false;
       } finally {
         clearTimeout(timeout);
       }
     }
 
-    function resetResult() {
-      count.textContent = "";
-      result.replaceChildren();
+    function setStatus(message) {
+      status.textContent = message;
     }
 
-    function showMessage(message, isError = false) {
-      note.textContent = message;
-      note.classList.toggle("error", isError);
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.hidden = false;
+      toast.textContent = message;
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 3000);
     }
 
-    function renderPath(path) {
-      const list = document.createElement("ol");
-      list.className = "path";
-      path.forEach((word, index) => {
-        const item = document.createElement("li");
-        const number = document.createElement("span");
-        number.className = "step-number";
-        number.textContent = index + 1;
-        const letters = document.createElement("span");
-        letters.className = "step-word";
-        letters.setAttribute("aria-label", word.toUpperCase());
-        for (let i = 0; i < word.length; i++) {
-          const letter = document.createElement("span");
-          letter.className = "letter" + (index > 0 && word[i] !== path[index - 1][i] ? " changed" : "");
-          letter.textContent = word[i].toUpperCase();
-          letter.setAttribute("aria-hidden", "true");
-          letters.append(letter);
+    function choosePair(length) {
+      const candidates = [...graph.keys()].filter(word => word.length === length && graph.get(word).length);
+      const offset = Math.floor(Math.random() * candidates.length);
+      for (let candidate = 0; candidate < candidates.length; candidate++) {
+        const start = candidates[(offset + candidate) % candidates.length];
+        const component = [start];
+        const visited = new Set(component);
+        for (let i = 0; i < component.length; i++) {
+          for (const neighbor of graph.get(component[i])) {
+            if (!visited.has(neighbor)) {
+              visited.add(neighbor);
+              component.push(neighbor);
+            }
+          }
         }
-        item.append(number, letters);
-        if (index === 0 || index === path.length - 1) {
-          const tag = document.createElement("span");
-          tag.className = "step-tag";
-          tag.textContent = path.length === 1 ? "start & finish" : index === 0 ? "start" : "finish";
-          item.append(tag);
-        }
-        list.append(item);
-      });
-      result.append(list);
-      if (path.length > 1) {
-        const legend = document.createElement("p");
-        legend.className = "legend";
-        legend.textContent = "The letter that changed";
-        result.append(legend);
+        const targets = component.filter(target =>
+          [...start].filter((letter, index) => letter !== target[index]).length >= 3 &&
+          (start !== startWord || target !== targetWord)
+        );
+        if (targets.length) return [start, targets[Math.floor(Math.random() * targets.length)]];
       }
-      const changes = path.length - 1;
-      count.textContent = `${changes} ${changes === 1 ? "change" : "changes"}`;
+      throw new Error(`No connected ${length}-letter pair differs in at least three positions.`);
+    }
+
+    function newGame(length) {
+      const pair = choosePair(length);
+      [startWord, targetWord] = pair;
+      wordLength = length;
+      const reservedWidth = wordLength >= 7 ? 14 : 58;
+      board.style.setProperty("--tile-size", `min(52px, calc((100cqw - ${reservedWidth + (wordLength - 1) * 8}px) / ${wordLength}))`);
+      solution = shortestPath(startWord, targetWord);
+      if (!solution) throw new Error("Selected words are not connected.");
+      document.getElementById("start-word").textContent = startWord.toUpperCase();
+      document.getElementById("target-word").textContent = targetWord.toUpperCase();
+      const startInfo = document.getElementById("start-info");
+      const targetInfo = document.getElementById("target-info");
+      startInfo.setAttribute("aria-label", `Meaning of starting word ${startWord}`);
+      targetInfo.setAttribute("aria-label", `Meaning of target word ${targetWord}`);
+      startInfo.disabled = false;
+      targetInfo.disabled = false;
+      resetGame();
+    }
+
+    function resetGame() {
+      if (drawer.open) {
+        regenerateAfterAnswer = false;
+        drawer.close();
+      }
+      clearTimeout(toastTimer);
+      toast.hidden = true;
+      currentWord = startWord;
+      steps = 0;
+      failures = 0;
+      finished = false;
+      summary.hidden = true;
+      form.hidden = false;
+      submit.disabled = false;
+      showAnswer.disabled = false;
+      rows.replaceChildren();
+      appendWord(startWord, "start");
+      appendInput();
+      setStatus("Two invalid tries per row. Each completed row counts as a step.");
+    }
+
+    // Reserve exact matches before assigning yellow tiles for repeated letters.
+    function scoreLetters(word, target) {
+      const scores = Array(word.length).fill("absent");
+      const remaining = new Map();
+      for (let i = 0; i < word.length; i++) {
+        if (word[i] === target[i]) scores[i] = "correct";
+        else remaining.set(target[i], (remaining.get(target[i]) || 0) + 1);
+      }
+      for (let i = 0; i < word.length; i++) {
+        if (scores[i] !== "correct" && remaining.get(word[i]) > 0) {
+          scores[i] = "present";
+          remaining.set(word[i], remaining.get(word[i]) - 1);
+        }
+      }
+      return scores;
+    }
+
+    function appendWord(word, tag, invalid = false) {
+      const row = document.createElement("div");
+      row.className = wordLength >= 7 ? "row long-word" : "row";
+      const tiles = document.createElement("div");
+      tiles.className = "tiles";
+      const scores = invalid ? Array(word.length).fill("invalid") : scoreLetters(word, targetWord);
+      const descriptions = { correct: "correct position", present: "wrong position", absent: "not in target", invalid: "invalid" };
+      tiles.setAttribute("aria-label", `${word.toUpperCase()}: ${word.split("").map((letter, i) => `${letter.toUpperCase()} ${descriptions[scores[i]]}`).join(", ")}`);
+      for (let i = 0; i < word.length; i++) {
+        const tile = document.createElement("span");
+        tile.className = `tile ${scores[i]}`;
+        tile.textContent = word[i].toUpperCase();
+        tile.setAttribute("aria-hidden", "true");
+        tiles.append(tile);
+      }
+      row.append(tiles);
+      if (tag) {
+        const label = document.createElement("span");
+        label.className = "row-tag";
+        label.textContent = tag;
+        row.append(label);
+      }
+      rows.append(row);
+    }
+
+    function appendInput() {
+      guessRow = document.createElement("div");
+      guessRow.className = "row";
+      const tiles = document.createElement("div");
+      tiles.className = "tiles";
+      tiles.setAttribute("role", "group");
+      tiles.setAttribute("aria-label", `Next ${wordLength}-letter word`);
+      guessInputs = [];
+      for (let i = 0; i < wordLength; i++) {
+        const input = document.createElement("input");
+        input.className = "guess";
+        input.type = "text";
+        input.setAttribute("form", "guess-form");
+        input.setAttribute("aria-label", `Letter ${i + 1} of ${wordLength}`);
+        input.setAttribute("aria-describedby", "status");
+        input.autocomplete = "off";
+        input.autocapitalize = "characters";
+        input.spellcheck = false;
+        input.dataset.letter = "";
+
+        const acceptText = text => {
+          const letters = text.match(/[a-z]/gi);
+          if (!letters) return;
+          input.value = letters[letters.length - 1].toUpperCase();
+          input.dataset.letter = input.value;
+          if (i < wordLength - 1) guessInputs[i + 1].focus({ preventScroll: true });
+        };
+        input.addEventListener("beforeinput", event => {
+          if (event.isComposing || event.inputType !== "insertText" || event.data === null) return;
+          event.preventDefault();
+          acceptText(event.data);
+        });
+        input.addEventListener("paste", event => {
+          event.preventDefault();
+          acceptText(event.clipboardData.getData("text"));
+        });
+        input.addEventListener("input", event => {
+          if (event.isComposing) return;
+          if (event.inputType.startsWith("delete")) {
+            input.dataset.letter = input.value;
+          } else {
+            const text = event.data ?? input.value;
+            input.value = input.dataset.letter;
+            acceptText(text);
+          }
+        });
+        input.addEventListener("keydown", event => {
+          if (event.key === "Backspace" && !input.value && i > 0) {
+            event.preventDefault();
+            guessInputs[i - 1].value = "";
+            guessInputs[i - 1].dataset.letter = "";
+            guessInputs[i - 1].focus({ preventScroll: true });
+          } else if (event.key === "ArrowLeft" && i > 0) {
+            event.preventDefault();
+            guessInputs[i - 1].focus({ preventScroll: true });
+          } else if (event.key === "ArrowRight" && i < wordLength - 1) {
+            event.preventDefault();
+            guessInputs[i + 1].focus({ preventScroll: true });
+          }
+        });
+        guessInputs.push(input);
+        tiles.append(input);
+      }
+      guessRow.append(tiles);
+      rows.append(guessRow);
+      board.scrollTop = board.scrollHeight;
+      guessInputs[0].focus({ preventScroll: true });
+    }
+
+    function rejectGuess(message, word) {
+      failures++;
+      showToast(message + (failures === 1 ? " · 1 try left" : " · row locked"));
+      guessRow.classList.remove("shake");
+      void guessRow.offsetWidth;
+      guessRow.classList.add("shake");
+      if (failures === 2) {
+        guessRow.remove();
+        appendWord(word, "invalid", true);
+        steps++;
+        failures = 0;
+        appendInput();
+      } else {
+        const lastFilled = [...guessInputs].reverse().find(input => input.value);
+        lastFilled.focus({ preventScroll: true });
+        lastFilled.setSelectionRange(lastFilled.value.length, lastFilled.value.length);
+      }
     }
 
     form.addEventListener("submit", event => {
       event.preventDefault();
-      if (!ready) return;
-      resetResult();
-      const start = startInput.value.trim().toLowerCase();
-      const target = targetInput.value.trim().toLowerCase();
-      for (const [input, word, label] of [[startInput, start, "starting"], [targetInput, target, "target"]]) {
-        if (!/^[a-z]{4}$/.test(word)) {
-          showMessage(`Enter a ${label} word with exactly four letters.`, true);
-          input.focus();
-          return;
-        }
-        if (!words.has(word)) {
-          showMessage(`“${word.toUpperCase()}” isn't in this dictionary. Try another ${label} word.`, true);
-          input.focus();
-          return;
-        }
+      if (finished || !guessInputs.length) return;
+      const word = guessInputs.map(input => input.value).join("").toLowerCase();
+      const emptyInput = guessInputs.find(input => !input.value);
+      if (emptyInput) {
+        showToast(`Enter a ${wordLength}-letter word.`);
+        emptyInput.focus({ preventScroll: true });
+        return;
       }
-      showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
-      const path = shortestPath(start, target);
-      if (path) {
-        renderPath(path);
+      if (!words.has(word)) {
+        rejectGuess("Word does not exist", word);
+        return;
+      }
+      if (!graph.get(currentWord).includes(word)) {
+        rejectGuess("Change exactly one letter from the last valid word", word);
+        return;
+      }
+      clearTimeout(toastTimer);
+      toast.hidden = true;
+      guessRow.remove();
+      appendWord(word, word === targetWord ? "finish" : "");
+      currentWord = word;
+      failures = 0;
+      steps++;
+      if (word === targetWord) {
+        finished = true;
+        guessInputs = [];
+        guessRow = null;
+        form.hidden = true;
+        setStatus("");
+        document.getElementById("score").textContent = `Your route: ${steps} ${steps === 1 ? "step" : "steps"} · Shortest: ${solution.length - 1} ${solution.length === 2 ? "step" : "steps"}`;
+        summary.hidden = false;
+        board.scrollTop = board.scrollHeight;
       } else {
-        const message = document.createElement("p");
-        message.className = "empty";
-        message.textContent = "No route connects these words in this dictionary. Try another pair.";
-        result.append(message);
+        appendInput();
       }
     });
 
-    for (const input of [startInput, targetInput]) {
-      input.addEventListener("input", () => {
-        edited = true;
-        resetResult();
-        if (ready) showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
-      });
+    const meaningDialog = document.getElementById("meaning-dialog");
+    function showMeaning(word) {
+      const meaning = definitions.get(word);
+      if (!meaning) {
+        console.error(`Missing definition for ${word}.`);
+        showToast("Couldn't find a definition for this word.");
+        return;
+      }
+      document.getElementById("meaning-title").textContent = word;
+      document.getElementById("meaning-text").textContent =
+        `${meaning.partOfSpeech ? meaning.partOfSpeech + ": " : ""}${meaning.text}`;
+      meaningDialog.showModal();
     }
-    document.getElementById("swap").addEventListener("click", () => {
-      edited = true;
-      [startInput.value, targetInput.value] = [targetInput.value, startInput.value];
-      resetResult();
-      if (ready) showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
+
+    document.getElementById("start-info").addEventListener("click", () => showMeaning(startWord));
+    document.getElementById("target-info").addEventListener("click", () => showMeaning(targetWord));
+    document.getElementById("close-meaning").addEventListener("click", () => meaningDialog.close());
+
+    function showPath() {
+      pathList.replaceChildren();
+      solution.forEach((word, index) => {
+        const item = document.createElement("li");
+        item.className = "path-item";
+        const line = document.createElement("div");
+        line.className = "path-line";
+        const number = document.createElement("span");
+        number.className = "path-number";
+        number.textContent = String(index + 1).padStart(2, "0");
+        const label = document.createElement("span");
+        label.className = "path-word";
+        label.textContent = word;
+        const info = document.createElement("button");
+        info.className = "info";
+        info.type = "button";
+        info.textContent = "i";
+        info.setAttribute("aria-label", `Meaning of ${word}`);
+        info.setAttribute("aria-haspopup", "dialog");
+        info.addEventListener("click", () => showMeaning(word));
+        line.append(number, label, info);
+        item.append(line);
+        pathList.append(item);
+      });
+      drawer.showModal();
+      regenerateAfterAnswer = true;
+    }
+
+    document.getElementById("retry-game").addEventListener("click", resetGame);
+    lengthInput.addEventListener("input", () => {
+      if (lengthInput.value === "" && !lengthInput.validity.badInput) return;
+      const length = lengthInput.valueAsNumber;
+      if (!Number.isInteger(length)) {
+        lengthInput.value = lastValidLength;
+        showToast("Choose a whole number from 4 to 6.");
+        return;
+      }
+      const bounded = Math.min(6, Math.max(4, length));
+      if (bounded !== length) {
+        lengthInput.value = bounded;
+        showToast("Choose a whole number from 4 to 6.");
+      }
+      lastValidLength = bounded;
     });
-    retry.addEventListener("click", loadWords);
+    lengthInput.addEventListener("blur", () => {
+      if (lengthInput.value === "") {
+        lengthInput.value = lastValidLength;
+        showToast("Choose a whole number from 4 to 6.");
+      }
+    });
+    function startSelectedGame() {
+      const length = lengthInput.valueAsNumber;
+      if (!Number.isInteger(length) || length < 4 || length > 6) {
+        showToast("Choose a whole number from 4 to 6.");
+        lengthInput.focus();
+        return;
+      }
+      try {
+        newGame(length);
+      } catch (error) {
+        console.error("Could not start the next challenge:", error);
+        showToast("Couldn't find a connected pair with three different letters. Try another length.");
+      }
+    }
+    document.getElementById("next-game").addEventListener("click", startSelectedGame);
+    refreshGame.addEventListener("click", startSelectedGame);
+    document.getElementById("show-path").addEventListener("click", showPath);
+    showAnswer.addEventListener("click", showPath);
+    document.getElementById("close-drawer").addEventListener("click", () => drawer.close());
+    drawer.addEventListener("close", () => {
+      if (regenerateAfterAnswer) {
+        regenerateAfterAnswer = false;
+        startSelectedGame();
+      }
+    });
+    retryLoading.addEventListener("click", loadWords);
     loadWords();
   </script>
 </body>
