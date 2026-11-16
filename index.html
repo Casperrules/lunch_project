@@ -53,9 +53,13 @@
       font-weight: 700; font-size: 13px; letter-spacing: .02em; text-align: left;
     }
     .submit:hover { background: #304b3d; }
+    .submit:disabled { cursor: wait; opacity: .6; }
     .submit-arrow { color: var(--lime); font-size: 23px; font-weight: 400; }
     .form-note { min-height: 19px; margin: 13px 0 0; color: #748278; font-size: 12px; line-height: 1.5; }
     .form-note.error { color: #a44032; }
+    .retry { padding: 0; border: 0; background: none; color: var(--ink); font-size: 12px; text-decoration: underline; }
+    .source { color: #748278; font-size: 11px; margin: 10px 0 0; }
+    .source a { color: inherit; }
     .result { margin-top: 31px; border-top: 1px solid #d8ded2; padding-top: 25px; }
     .result-top { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; }
     .result-label { color: #77877b; }
@@ -110,8 +114,10 @@
             <button class="swap" id="swap" type="button" aria-label="Swap starting and target words" title="Swap words">⇄</button>
             <label><span class="field-label">Target word</span><input class="word-input" id="target" type="text" maxlength="4" placeholder="WARM" value="warm" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="form-note"></label>
           </div>
-          <button class="submit" type="submit"><span>Find the shortest path</span><span class="submit-arrow" aria-hidden="true">↗</span></button>
-          <p class="form-note" id="form-note">Use four-letter words from the dictionary.</p>
+          <button class="submit" type="submit" disabled><span>Find the shortest path</span><span class="submit-arrow" aria-hidden="true">↗</span></button>
+          <p class="form-note" id="form-note" role="status">Loading the word list…</p>
+          <button class="retry" id="retry" type="button" hidden>Retry loading</button>
+          <p class="source">Words from <a href="https://github.com/dwyl/english-words" target="_blank" rel="noopener noreferrer">dwyl/english-words</a></p>
         </form>
         <div class="result" aria-live="polite" aria-atomic="true">
           <div class="result-top"><span class="result-label">The route</span><span class="result-count" id="result-count"></span></div>
@@ -120,104 +126,9 @@
       </section>
   </main>
   <script>
-    const dictionary = [
-      "able", "acid", "aged", "ally", "also", "area", "army", "atom", "babe", "baby", "back",
-      "ball", "band", "bank", "base", "bear", "beat", "bell", "belt", "best", "bird",
-      "blow", "blue", "boat", "body", "bone", "book", "boom", "born", "boss", "bowl",
-      "bulk", "burn", "bush", "busy", "call", "calm", "camp", "card", "care", "case",
-      "cash", "cast", "cell", "chat", "chip", "city", "club", "coal", "coat", "code",
-      "cold", "come", "cook", "cool", "cope", "copy", "core", "cost", "crew", "crop",
-      "dark", "data", "date", "dawn", "days", "dead", "deal", "dean", "dear", "debt",
-      "deck", "deed", "deep", "deer", "deny", "desk", "dial", "diet", "disk", "dock",
-      "does", "done", "door", "dose", "down", "draw", "drop", "duck", "duet", "dusk",
-      "dust", "duty", "each", "earn", "ease", "east", "easy", "edge", "edit", "else",
-      "emit", "epic", "even", "ever", "exam", "exit", "face", "fact", "fade", "fail",
-      "fair", "fall", "fame", "farm", "fast", "fate", "fear", "feed", "feel", "feet",
-      "fell", "felt", "file", "fill", "film", "find", "fine", "fire", "firm", "fish",
-      "five", "flat", "flow", "focal", "fold", "folk", "fond", "food", "foot", "ford",
-      "form", "fort", "foul", "four", "free", "frog", "from", "fuel", "full", "fund",
-      "gain", "game", "gang", "gate", "gave", "gear", "gene", "gift", "girl", "give",
-      "glad", "goal", "goes", "gold", "golf", "gone", "good", "gray", "grew", "grey",
-      "grid", "grow", "gulf", "hair", "half", "hall", "halt", "hand", "hang", "hard",
-      "harm", "hate", "have", "head", "hear", "heat", "held", "hell", "help", "here",
-      "hero", "high", "hill", "hire", "hold", "hole", "holy", "home", "hope", "host",
-      "hour", "huge", "hung", "hunt", "hurt", "idea", "inch", "into", "iron", "item",
-      "jail", "jazz", "join", "joke", "jolt", "jump", "jury", "just", "keen", "keep",
-      "kent", "kept", "kick", "kill", "kind", "king", "kiss", "knee", "knew", "knot",
-      "know", "lack", "lady", "laid", "lake", "lamp", "land", "lane", "last", "late",
-      "lead", "leaf", "leak", "lean", "lear", "leas", "leds", "left", "lend", "lens",
-      "lent", "less", "lest", "liar", "lick", "life", "lift", "like", "lime", "line",
-      "link", "lion", "lips", "list", "live", "load", "loan", "lock", "logo", "lomb",
-      "lone", "long", "look", "lord", "lose", "loss", "lost", "loud", "love", "luck",
-      "lump", "lung", "made", "mail", "main", "make", "male", "mall", "many", "marc",
-      "mark", "mars", "mask", "mass", "mate", "math", "matt", "meal", "mean", "meat",
-      "meet", "melt", "memo", "menu", "mere", "mesh", "mesh", "mike", "mild", "mile",
-      "milk", "mill", "mind", "mine", "mini", "mode", "mood", "moon", "moor", "more",
-      "most", "move", "much", "must", "myth", "nail", "name", "navy", "near", "neat",
-      "neck", "need", "neon", "nest", "news", "next", "nice", "nine", "none", "noon",
-      "norm", "nose", "note", "numb", "nuts", "oath", "obey", "odds", "ogle", "okay",
-      "olds", "olio", "omit", "once", "only", "onto", "open", "oral", "orca", "orig",
-      "oval", "oven", "over", "pace", "pack", "page", "paid", "pain", "pair", "pale",
-      "palm", "park", "part", "pass", "past", "path", "peak", "peal", "pear", "peel",
-      "peer", "pelt", "pend", "pens", "pent", "perk", "pest", "pets", "pick", "piec",
-      "pile", "pill", "pine", "pink", "pipe", "pity", "plan", "play", "plot", "plug",
-      "plus", "poem", "poet", "pole", "poll", "pond", "pool", "poor", "pork", "port",
-      "pose", "post", "pour", "pray", "prep", "prev", "prey", "pride", "prim", "priv",
-      "prod", "prof", "prop", "pros", "pull", "pulp", "pump", "pure", "push", "quad",
-      "quay", "queen", "query", "quest", "quit", "quiz", "quot", "race", "rack", "rage",
-      "raid", "rail", "rain", "ramp", "rang", "rank", "rare", "rate", "rawl", "read",
-      "real", "rear", "rebel", "recs", "reed", "reef", "reel", "rely", "rent", "rest",
-      "rice", "rich", "ride", "ring", "riot", "ripe", "rise", "risk", "road", "roam",
-      "roar", "rock", "rode", "role", "roll", "roof", "room", "root", "rope", "rose",
-      "ruin", "rule", "rump", "rung", "rush", "rust", "safe", "sage", "said", "sail",
-      "sake", "sale", "salt", "same", "sand", "sang", "sank", "save", "scan", "scar",
-      "scene", "scot", "seal", "seat", "seed", "seek", "seem", "seen", "self", "sell",
-      "send", "sent", "sept", "seqs", "sera", "serf", "sess", "sets", "sewn", "shad",
-      "shag", "shah", "sham", "shed", "shew", "shin", "ship", "shoe", "shop", "shot",
-      "show", "shun", "shut", "sick", "side", "sift", "sigh", "sign", "silk", "sill",
-      "silo", "silver", "sims", "sine", "sing", "sink", "sins", "site", "sits", "size",
-      "skew", "skid", "skim", "skin", "skip", "skirt", "slab", "slam", "slap", "slat",
-      "slaw", "slay", "sled", "sleek", "sleep", "sleet", "slept", "slice", "slick",
-      "slide", "slime", "sling", "slip", "slit", "slob", "slog", "slot", "slow", "slug",
-      "slum", "slur", "smog", "snap", "snip", "snob", "snot", "snow", "snub", "snug",
-      "soak", "soap", "soar", "sock", "soda", "sofa", "soft", "soil", "sold", "sole",
-      "solo", "some", "song", "soon", "soot", "sore", "sort", "soul", "soup", "sour",
-      "sow", "span", "spar", "spas", "spat", "spec", "sped", "spin", "spit", "spot",
-      "spud", "spun", "spur", "stab", "stag", "stan", "star", "stat", "stay", "stem",
-      "step", "stew", "stir", "stop", "stow", "stub", "stud", "stun", "subs", "such",
-      "suck", "sued", "suet", "suit", "sulks", "sung", "sunk", "sure", "surf", "swab",
-      "swag", "swan", "swap", "swat", "sway", "swig", "swim", "swin", "sync", "syst",
-      "tabs", "tach", "tack", "tact", "tag", "tail", "take", "tale", "talk", "tall",
-      "tame", "tank", "tape", "taps", "tare", "tarn", "taro", "tarp", "tart", "task",
-      "taxi", "teal", "team", "tear", "teas", "tech", "teed", "teen", "tees", "tell",
-      "tend", "tens", "tent", "term", "tern", "test", "text", "than", "that", "thee",
-      "them", "then", "thew", "they", "thin", "this", "thor", "thou", "thru", "thud",
-      "thug", "tick", "tide", "tidy", "tier", "ties", "tiff", "tile", "till", "tilt",
-      "time", "ting", "tint", "tiny", "tips", "tire", "toad", "toga", "told", "toll",
-      "tomb", "tone", "tong", "tons", "took", "tool", "toot", "topaz", "tops", "tore",
-      "torn", "toro", "tort", "toss", "tote", "tour", "tout", "town", "toys", "tram",
-      "trap", "tray", "tree", "trek", "trim", "trio", "trip", "trod", "trot", "true",
-      "tub", "tube", "tuck", "tuft", "tuna", "tune", "turf", "turn", "tusk", "tutu",
-      "twin", "twit", "type", "typo", "ugly", "undo", "unit", "upon", "urge", "used",
-      "user", "utah", "vain", "vale", "vamp", "vane", "vang", "vape", "vase", "vast",
-      "veal", "veda", "veen", "veer", "veil", "vein", "veld", "vend", "vent", "verb",
-      "very", "vial", "vice", "vide", "vied", "vier", "view", "vile", "vine", "vino",
-      "viol", "visa", "vise", "void", "volt", "vote", "vow", "wade", "waft", "wage",
-      "wail", "wait", "wake", "walk", "wall", "wand", "wane", "want", "ward", "warm",
-      "warn", "warp", "wars", "wart", "wary", "wash", "wasp", "watt", "wave", "wavy",
-      "waxy", "ways", "weak", "weal", "wean", "wear", "weed", "week", "weep", "weld",
-      "well", "welt", "went", "wept", "were", "west", "wet", "wham", "what", "whee",
-      "when", "whew", "whet", "whig", "whim", "whip", "whir", "whit", "whiz", "who",
-      "whom", "whop", "whys", "wick", "wide", "wife", "wild", "will", "wilt", "wimp",
-      "wind", "wine", "wing", "wink", "wipe", "wire", "wise", "wish", "wisp", "with",
-      "wits", "woes", "woke", "wolf", "womb", "wood", "wool", "word", "wore", "work",
-      "worm", "worn", "wort", "wove", "wrap", "wren", "writ", "wry", "yacht", "yaks",
-      "yam", "yawn", "yea", "yeah", "year", "yeast", "yell", "yelp", "yeti", "yew",
-      "yin", "yipe", "yolk", "yore", "your", "yowl", "yuan", "yurt", "zany", "zap",
-      "zeal", "zero", "zest", "zinc", "zing", "zion", "zone", "zoom", "zori"
-    ];
-
-    const words = new Set(dictionary.filter(word => /^[a-z]{4}$/.test(word)));
+    const WORD_LIST_URL = "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt";
+    let words = new Set();
+    let graph = new Map();
 
     // Build and retain the complete adjacency list once, rather than generating neighbors during each search.
     function buildGraph(wordSet) {
@@ -237,8 +148,6 @@
       }
       return graph;
     }
-
-    const graph = buildGraph(words);
 
     function shortestPath(start, target) {
       if (start === target) return [start];
@@ -294,6 +203,39 @@
     const note = document.getElementById("form-note");
     const result = document.getElementById("result");
     const count = document.getElementById("result-count");
+    const submit = form.querySelector('button[type="submit"]');
+    const retry = document.getElementById("retry");
+    let ready = false;
+    let edited = false;
+
+    async function loadWords() {
+      ready = false;
+      submit.disabled = true;
+      retry.hidden = true;
+      showMessage("Loading the word list…");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(WORD_LIST_URL, { signal: controller.signal });
+        if (!response.ok) throw new Error(`Word list request failed: HTTP ${response.status}`);
+        const text = await response.text();
+        const loadedWords = new Set(text.split(/\r?\n/).filter(word => /^[a-z]{4}$/.test(word)));
+        if (loadedWords.size < 1000) throw new Error("The word list is incomplete or invalid.");
+        const loadedGraph = buildGraph(loadedWords);
+        words = loadedWords;
+        graph = loadedGraph;
+        ready = true;
+        submit.disabled = false;
+        showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
+        if (!edited) form.requestSubmit();
+      } catch (error) {
+        console.error("Could not load the word list:", error);
+        showMessage("Couldn't load the word list. Check your connection and try again.", true);
+        retry.hidden = false;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
 
     function resetResult() {
       count.textContent = "";
@@ -345,6 +287,7 @@
 
     form.addEventListener("submit", event => {
       event.preventDefault();
+      if (!ready) return;
       resetResult();
       const start = startInput.value.trim().toLowerCase();
       const target = targetInput.value.trim().toLowerCase();
@@ -360,7 +303,7 @@
           return;
         }
       }
-      showMessage("Use four-letter words from the dictionary.");
+      showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
       const path = shortestPath(start, target);
       if (path) {
         renderPath(path);
@@ -374,16 +317,19 @@
 
     for (const input of [startInput, targetInput]) {
       input.addEventListener("input", () => {
+        edited = true;
         resetResult();
-        showMessage("Use four-letter words from the dictionary.");
+        if (ready) showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
       });
     }
     document.getElementById("swap").addEventListener("click", () => {
+      edited = true;
       [startInput.value, targetInput.value] = [targetInput.value, startInput.value];
       resetResult();
-      showMessage("Use four-letter words from the dictionary.");
+      if (ready) showMessage(`${words.size.toLocaleString()} four-letter words ready.`);
     });
-    form.requestSubmit();
+    retry.addEventListener("click", loadWords);
+    loadWords();
   </script>
 </body>
 </html>
